@@ -1,0 +1,212 @@
+##################################################
+### Morality and the Gods
+### Benjamin Grant Purzycki
+### Last Updated: 14-1-2025
+
+setwd("")
+
+### Swanson
+bog <- read.csv("Swanson_Data.csv", sep = ";")
+
+morlab <- c("X", "X1", "X4", "X37", "X38", "X39")
+morsub <- bog[morlab]
+
+morsub$X4[morsub$X4 == "Y"] <- NA # size of population
+morsub$X37[morsub$X37 == "X"] <- NA # supernatural sanct. for morality on health
+morsub$X38[morsub$X38 == "X"] <- NA # on afterlife beliefs
+morsub$X39[morsub$X39 == "X"] <- NA # other effects
+
+morsub$X4 <- as.integer(morsub$X4)
+morsub$X38 <- as.integer(morsub$X38)
+morsub$X39 <- as.integer(morsub$X39)
+
+morsub$sum <- rowSums(morsub[,4:6], na.rm = T)
+morsub$bin <- 0
+morsub$bin[morsub$sum > 0] <- 1
+
+# X1 is "Principal Source of Food"
+# dummy codes for foraging
+# 2: nomadic herding; 3: settled herding; 4: agriculture (root crops); 
+# 5: agriculture (grain crops)
+
+# Very strict
+morsub$hunt1 <- 0
+morsub$hunt1[morsub$X1 == 0] <- 1 # 0 = collecting, gathering
+morsub$hunt1[morsub$X1 == 1] <- 1 # 1 = fishing
+morsub$hunt1[morsub$X1 == 6] <- 1 # 6 = hunting
+
+# A bit more open
+morsub$hunt2 <- 0
+morsub$hunt2[morsub$X1 == 0] <- 1 # 0 = collecting, gathering
+morsub$hunt2[morsub$X1 == 1] <- 1 # 1 = fishing
+morsub$hunt2[morsub$X1 == 6] <- 1 # 6 = hunting
+morsub$hunt2[morsub$X1 == 7] <- 1 # 7 = hunting or fishing and root crops
+morsub$hunt2[morsub$X1 == 8] <- 1 # 8 = hunting or fishing and grain crops
+morsub$hunt2[morsub$X1 == 9] <- 1 # 9 = harvesting from trees which require some care if they are to bear a crop
+
+## Pop. size
+dx <- table(morsub$X4, morsub$bin)
+rownames(dx) <- c("1-49", "50-399", "400-9,999", ">9,999")
+colnames(dx) <- c("absent", "present")
+dd <- dx/rowSums(dx)
+
+sizelab <- rownames(dd)
+
+### Food type
+dfood1 <- table(MSP = morsub$bin, hunt = morsub$hunt1)
+dfood2 <- table(MSP = morsub$bin, hunt = morsub$hunt2)
+dfood1p <- prop.table(dfood1, 2)
+
+### # indicators of wealth
+indicators <- c(0, 1, 2, 3, 4)
+present <- c(2, 4, 7, 11, 4)
+absent <- c(4, 4, 0, 1, 0)
+
+dpres <- data.frame(present, absent)
+rownames(dpres) <- indicators
+dpres <- t(dpres)
+dpres <- dpres[c(2, 1),]
+
+### SCCS High Gods Variable
+levels <- c(0, 1, 2, 3, 4, "NA")
+highgods <- c("abs./unreported", "inactive", 
+              "active, non-moral", "active, moral", "NA")
+
+dig <- data.frame(x1 = c(43, 13, 4, 4, 4, 0),
+                x2 = c(17, 15, 6, 3, 6, 0),
+                x3 = c(8, 2, 3, 0, 0, 0),
+                x4 = c(6, 13, 7, 11, 2, 1),
+                x5 = c(8, 5, 3, 1, 0, 1))
+rownames(dig) <- levels
+colnames(dig) <- highgods
+
+digsub <- dig[1:5, 1:4] # axe NA's
+digsub <- t(digsub)
+digsubp <- t(prop.table(digsub, 2))
+highvals <- cbind(digsubp[,1], digsubp[,4])
+colnames(highvals) <- c("Abs./Unr.", "MHG")
+
+##########################################################
+### Plots
+
+par(mfrow = c(2, 2),mar = c(4, 4, 1, 1))  
+
+barplot(t(dd), beside = T,
+        ylim = c(0, 1.2), col = c("lightgray", "gray39"),
+        xlab = NA, 
+        ylab = NA, names = sizelab)
+legend(2, 1.1, legend = c("abs./unrep.", "reported"),
+       fill = c("lightgray", "gray39"), cex = .8)
+mtext("prop. of pop. size", 2, padj = -3.5, cex = .9)
+mtext("population size (Swanson)", 1, padj = 3.5, cex = .9)
+box()
+text(11.5, 1, "(a)")
+
+barplot(dfood1p, beside = T,
+        ylim = c(0, 1), names = c("other", "foragers"),
+        axes = T, col = c("lightgray", "gray39"))
+mtext("prop. of subs. type", 2, padj = -3.5, cex = .9)
+mtext("subsistence (Swanson)", 1, padj = 3.5, cex = .9)
+box()
+legend(3.5, 0.9, legend = c("abs./unrep.", "reported"),
+       fill = c("lightgray", "gray39"), cex = 0.8)
+text(1.3, 0.83, "(b)")
+
+barplot(prop.table(dpres, 1), beside = T,
+        ylim = c(0, 0.6), col = c("lightgray", "gray39"),
+        xlab = NA, 
+        ylab = NA)
+mtext("# indicators of wealth (Swanson)", 1, cex = .9, padj = 3.5)
+mtext("prop. of state", 2, cex = .9, padj = -3.5)
+legend(6, 0.56, legend = c("abs./unrep.", "reported"),
+       fill = c("lightgray", "gray39"),
+       cex = 0.8)
+box()
+text(14.5, 0.5, "(c)")
+
+barplot(t(highvals), beside = T, 
+        ylim = c(0, 0.8), col = c("lightgray", "gray39"))
+box()
+mtext("jurisdictional levels (SCCS)", 1, padj = 3.5, cex = .9)
+mtext("prop. with moralistic high gods", 2, padj = -3.5, cex = .9)
+legend(4, .75, legend = c("abs./unrep", "moral. high god"),
+       fill = c("lightgray", "grey35"), cex = 0.8)
+text(1.8, 0.66, "(d)")
+
+###################################################
+### Density Plots of Moralization Index
+
+rm(list = ls())
+
+mycol1 <- rgb(5,5,5, max=255, alpha = 100, names = "darkgray") 
+mycol2 <-  rgb(255, 255, 255, max = 255, alpha = 100, names = "white")
+
+add_label <- function(xfrac, yfrac, label, pos = 2, ...) {
+  u <- par("usr")
+  x <- u[1] + xfrac * (u[2] - u[1])
+  y <- u[4] - yfrac * (u[4] - u[3])
+  text(x, y, label, pos = pos, ...)
+}
+
+labelsx <- c("\u2020", "\u2020", "\u2020", "", "\u2020*", "\u2020", 
+             "*", "", "\u2020*", "\u2020*", "", "\u2020*")
+
+d <- read.delim("CERC_WaveII_public_V1.0.txt")
+
+d <- d[order(d$SITE), ]
+
+d$BGMORAL = rowMeans(d[,c("BGMURDIMP", "BGLIEIMP", "BGSTLIMP")], na.rm = TRUE)
+d$LGMORAL = rowMeans(d[,c("LGMURDIMP", "LGLIEIMP", "LGSTEALIMP")], na.rm = TRUE)
+subvars3 <- c("SITE", "BGMORAL", "LGMORAL")
+morfac3 <- d[subvars3]
+validrows3 <- morfac3[complete.cases(morfac3),]
+
+# Main Plot
+par(mfrow = c(5, 3), mai = c(.6, .5, .1, .1))
+indx = 1
+for (site in unique(validrows3$SITE)){  
+  sub <- subset(validrows3, site == validrows3$SITE) 
+  densL <- density(sub$LGMORAL, bw = 0.3)
+  densM <- density(sub$BGMORAL, bw = 0.3)
+  demo <- data.frame(Moralistic = sub$BGMORAL, 
+                     Local = sub$LGMORAL)
+  dens <- apply(demo, 2, density, na.rm = T)
+  plot(NA, xlab = site, ylab = "", 
+       xlim = c(-1, 5), ylim = c(0,.8), cex.lab = 1.7)
+  polygon(densM, col = mycol1)
+  polygon(densL, col = mycol2)
+  abline(v = 0, lty = 2)
+  add_label(1, .12, labelsx[indx], cex = 1.7)
+  indx = indx + 1
+}
+
+# Add Hadza
+dHADZA <- d
+dHADZA$BGMORAL=rowMeans(dHADZA[,c("BGSTEALH", "BGLYINGH", "BGMURDERH")], na.rm = TRUE)
+dHADZA$LGMORAL=rowMeans(dHADZA[,c("LGSTEALH", "LGLYINGH", "LGMURDERH")], na.rm = TRUE)
+BGH <- dHADZA$BGMORAL[!is.na(dHADZA$BGMORAL)]
+LGH <- dHADZA$LGMORAL[!is.na(dHADZA$LGMORAL)]
+densBH <- density(BGH)
+densLH <- density(LGH)
+plot(NA, ylab = "", xlim = c(-2, 2), ylim = c(0, .8), cex.lab = 1.7, xlab = "Hadza")
+polygon(densBH, col = mycol1)
+polygon(densLH, col = mycol2)
+abline(v = -1, lty = 2)
+text(1.5, .72, "**", cex = 1.7)
+
+# Add Lovu
+Lovu <- subset(d, d$SITE=="Lovu")
+densML <- density(Lovu$BGMORAL)
+plot(NA, ylab = "", xlim = c(-1, 5), ylim = c(0, .8), cex.lab = 1.7, xlab = "Lovu")
+polygon(densML, col = mycol1)
+abline(v = 0, lty = 2)
+text(4.5, .72, "***", cex = 1.7)
+
+# Add Samburu
+Samburu <- subset(d, d$SITE=="Samburu")
+densSA <- density(Samburu$BGMORAL)
+plot(NA, ylab = "", xlim = c(-1, 5), ylim = c(0, .8), cex.lab = 1.7, xlab = "Samburu")
+polygon(densSA, col = mycol1)
+abline(v = 0, lty = 2)
+text(4.5, .72, "\u2020***", cex = 1.7)
+
